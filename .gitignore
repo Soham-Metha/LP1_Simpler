@@ -39,3 +39,7 @@
 
 # debug information files
 *.dwo
+
+AP1/tc1_out
+AP1/tc2_out
+AP1/tc3_out
