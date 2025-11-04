@@ -7,10 +7,15 @@ using namespace std;
 
 enum { LABL, INST, OPR1, OPR2, COUNT };
 
-vector<pair<string, int>> sym_table, literal_table;
+vector<pair<string, int>> sym_table, lit_table;
 
 int pool_pos = 0, LC = 0;
 
+#define str_chop(str, start_chop, end_chop) str.substr(start_chop, str.size() - start_chop - end_chop)
+#define is_num(str) str[0] == '-' || (str[0] >= 0 && str[0] <= 9)
+
+// -------------------------------------------- Symbol Table Actions ---------------------------------------
+/* converts "label_name" into "(S,id)+offset" format */
 string label_access_handler(const string& name)
 {
     size_t pos    = name.find_first_of("+-");
@@ -19,17 +24,25 @@ string label_access_handler(const string& name)
 
     size_t i;
     for (i = 0; i < sym_table.size(); i++) {
-        if (sym_table[i].first == base)
-            return "(S," + to_string(i + 1) + ")" + offset;
+        if (sym_table[i].first == base)       { return "(S," + to_string(i + 1) + ")" + offset; }
     }
 
     sym_table.push_back({ base, 0 }); 
 
+    /* add 1 since we want the 1-indexed count, not 0-indexed */
     return "(S," + to_string(i + 1) + ")" + offset;
 }
 
+
+/*  Updates the SYMTAB to set value of a label, 
+    also updates LC in case of "EQU" and "ORIGIN" directive
+    Ideally the ORIGIN directive should be checked within 
+        string directive_handler(string id, string opr1)
+    but it doesn't matter here since it's just a lab practical*/
 void labl_decl_handler(string words[COUNT], int PC) 
 {
+    /*  a local variable which specifies what address the label should point to, 
+        by default its the current Prog Counter, using "EQU" would change this */
     int addr = PC;
 
     if (words[INST] == "EQU" || words[INST] == "ORIGIN") {
@@ -38,26 +51,22 @@ void labl_decl_handler(string words[COUNT], int PC)
         string offset = (pos == string::npos) ? ""          : words[OPR1].substr(pos);
 
         for (size_t i = 0; i < sym_table.size(); i++) {
-            if (sym_table[i].first == base) {
-                if (words[INST] == "EQU") {
-                    addr = offset.empty()? sym_table[i].second:sym_table[i].second+stoi(offset);
-                } else if (words[INST] == "ORIGIN") {
-                    LC   = offset.empty()? sym_table[i].second:sym_table[i].second+stoi(offset);
-                }
-                break;
-            }
+            if (sym_table[i].first != base) continue;
+            if (words[INST] == "EQU")         { addr = sym_table[i].second + (offset.empty()? 0 : stoi(offset)); } 
+            else if (words[INST] == "ORIGIN") { LC   = sym_table[i].second + (offset.empty()? 0 : stoi(offset)); }
+            break;
         }
     }
 
     if (words[LABL] == "") return;
-    (void)label_access_handler(words[LABL]);
+    (void)label_access_handler(words[LABL]); // inserts the label in the SYMTAB if not already present
     for (size_t i = 0; i < sym_table.size(); i++) {
-        if (sym_table[i].first == words[LABL]) {
-            sym_table[i].second = addr;
-            break;
-        }
+        if (sym_table[i].first == words[LABL] &&  sym_table[i].second != 0) { cout << "REDEFINITION of symbol: " << sym_table[i].first; }
+        if (sym_table[i].first == words[LABL])                              { sym_table[i].second = addr; break; }
     }
 }
+
+// -------------------------------------------- Handlers ---------------------------------------
 
 string imperative_handler(string id) {
     string out = to_string(LC) + "\t(IS," + id + ")";
@@ -67,11 +76,8 @@ string imperative_handler(string id) {
 
 string declarative_handler(string id, string opr1) {
     string out = to_string(LC) + "\t(DL," + id + ")";
-    if (id == "01") {
-        LC += 1;
-    } else if (id == "02") {
-        LC += stoi(opr1);
-    }
+    if (id == "01")      { LC += 1; }
+    else if (id == "02") { LC += stoi(opr1); }
     return out;
 }
 
@@ -82,22 +88,23 @@ string directive_handler(string id, string opr1)
     case 1:     // START
         LC = stoi(opr1);
         break;
-    case 3:     // ORIGIN
-    case 4:     // EQU
+    case 3:     // ORIGIN ; handled within the label decl function
+    case 4:     // EQU    ; no need to do anything here
         break;
     case 2:     // END
     case 5:     // LTORG
-        for (size_t i = pool_pos; i < literal_table.size(); i++)
-        {
-            literal_table[i].second = LC;
-            out = out + "\n" + to_string(LC) + "\t(DL,01)\t(C," + literal_table[i].first + ")";
+        for (size_t i = pool_pos; i < lit_table.size(); i++) {
+            out += "\n" + to_string(LC) + "\t(DL,01)\t(C," + lit_table[i].first + ")";
+            lit_table[i].second = LC;
             LC  += 1;
         }
-        pool_pos = literal_table.size();
+        pool_pos = lit_table.size();
         break;
     }
     return out;
 }
+
+// -------------------------------------------- Look Up Table (OPTAB) ---------------------------------------
 
 string inst_handler(string words[COUNT]) {
     if      (words[INST] == "STOP")    { return imperative_handler("00");}
@@ -139,52 +146,42 @@ string operand_handler(string words[COUNT], int opr_no) {
     else if (words[opr_no] == "GE")      { return "(5)";}
     else if (words[opr_no] == "ANY")     { return "(6)";}
 
-    else if (words[opr_no].at(0) == '=') {
-        literal_table.push_back({words[opr_no].substr(2, words[opr_no].size()-3),0}); // discard 2 chars (=') from start & 1 char (') from end
-        return "(L," + to_string(literal_table.size()) + ")";
+    else if (is_num(words[opr_no]))      { return "(C," + words[opr_no] + ")"; }
+
+    else if (words[opr_no][0] == '\'')   { return "(C," + str_chop(words[opr_no], 1, 1) + ")"; }
+    else if (words[opr_no][0] == '=')    {
+        lit_table.push_back({ str_chop(words[opr_no], 2, 1), 0 });
+        return "(L," + to_string(lit_table.size()) + ")";
     }
 
-    else if (words[opr_no].at(0) == '\'') {
-        return "(C," + words[opr_no].substr(1, words[opr_no].size()-2) + ")"; // discard 1 char (') from both ends
-    }
-
-    else if ( words[opr_no].at(0) == '-' || 
-            (   words[opr_no].at(0) >= '0'
-            &&  words[opr_no].at(0) <= '9' )
-        ) {
-        return "(C," + words[opr_no] + ")";
-    }
-
-    else {
-        return label_access_handler(words[opr_no]);
-    }
+    else                                 { return label_access_handler(words[opr_no]); }
 }
 
+// -------------------------------------------- Main Loop ---------------------------------------
+
 int main() {
-    string line;
+    string line, output = "";
+
     while (getline(cin, line)) {
         if (line.find_first_not_of(" \t") == string::npos) continue;
 
         istringstream iss(line);
         string words[COUNT], buf;
 
-        int i     = isspace(line[0]) ? INST : LABL;
+        int i = isspace(line[0]) ? INST : LABL;
         while (i < COUNT && iss >> buf)
             words[i++] = buf;
 
         labl_decl_handler(words, LC);
-        cout << "\n" << inst_handler(words);
-        cout << "\t" << operand_handler(words, OPR1);
-        cout << "\t" << operand_handler(words, OPR2);
+        output += "\n" + inst_handler(words);
+        output += "\t" + operand_handler(words, OPR1);
+        output += "\t" + operand_handler(words, OPR2);
     }
 
-    cout << "\n\n";
-    for (size_t i = 0; i < sym_table.size(); i++) {
-        cout << sym_table[i].first << "\t" << sym_table[i].second << "\n";
-    }
-    for (size_t i = 0; i < literal_table.size(); i++) {
-        cout << "='" << literal_table[i].first << "'\t" << literal_table[i].second << "\n";
-    }
+    for (size_t i = 0; i < sym_table.size(); i++) { cout << sym_table[i].first << "\t" << sym_table[i].second << "\n"; }
+    cout << "\n";
+    for (size_t i = 0; i < lit_table.size(); i++) { cout << lit_table[i].first << "\t" << lit_table[i].second << "\n"; }
+    cout << "\n" << output << "\n";
 }
 
 // g++ ./assembler_pass_1.cpp

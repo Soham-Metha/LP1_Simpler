@@ -1,5 +1,5 @@
 
-run_all: clean all
+test_all: clean all
 	./a.out < tc1 > tc1_out
 	diff tc1_out tc1_expected --suppress-common-lines -y --ignore-all-space && echo "\nTC1 PASSED\n\n"
 	./a.out < tc2 > tc2_out
