@@ -9,12 +9,12 @@ enum { SYM_TAB, LIT_TAB, PROGRAM };
 enum { SYM, VAL };
 enum { LC, INST, OPR1, OPR2, COUNT };
 
-vector<pair<string, int>> sym_table, lit_table;
+vector<pair<string, string>> sym_table, lit_table;
 
 const string no_mc = "-------";
 
 #define str_chop(str, start_chop, end_chop) str.substr(start_chop, str.size() - start_chop - end_chop)
-#define sym_deref(tab, idx_str) to_string(tab[stoi(idx_str) - 1].second)
+#define sym_deref(tab, idx_str) tab[stoi(idx_str) - 1].second
 
 string inst_handler(string inst)
 {
@@ -52,8 +52,8 @@ int main()
         while (i < COUNT && iss >> buf)
             words[i++] = buf;
 
-        if (idx == SYM_TAB)      { sym_table.push_back({ words[SYM], stoi(words[VAL]) }); }
-        else if (idx == LIT_TAB) { lit_table.push_back({ words[SYM], stoi(words[VAL]) }); }
+        if (idx == SYM_TAB)      { sym_table.push_back({ words[SYM], words[VAL] }); }
+        else if (idx == LIT_TAB) { lit_table.push_back({ words[SYM], words[VAL] }); }
         else if (idx == PROGRAM) {
 
             output += "\n" + words[LC] + "\t" + inst_handler(words[INST]);
