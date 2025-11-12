@@ -63,8 +63,8 @@ string handle_macro_call(string line, macro_info MNT_entry)
     getline(iss, buf, ' '); // discard macro name from stream
 
     for (int offset = 0; offset < key_arg_cnt; offset += 1) { PNT[pos_arg_cnt + offset] = KPDT[arg_lut_base + offset - 1].second; }
-    for (int  start = 0;  start < pos_arg_cnt
-        && getline(iss, buf, ',') && trim(buf); start += 1) { PNT[start]                = buf; }
+    for (int  param = 0;  param < pos_arg_cnt
+        && getline(iss, buf, ',') && trim(buf); param += 1) { PNT[param]                = buf; }
 
     while (getline(iss, buf, ',') && trim(buf)) {
         size_t pos                = buf.find_first_of("=");
@@ -76,11 +76,10 @@ string handle_macro_call(string line, macro_info MNT_entry)
 
     // for (int i = 0;                    i   < arg_cnt;    i++) { op   += "\n " + to_string(i) + "\t" + PNT[i]; }
     // op += "\n";
-    for (int i = 0; MDT[def_lut_base + i - 1] != "MEND"; i++) { body += "\n + " + MDT[def_lut_base + i - 1]; }
-    body += "\n";
-    for (int i = 0;                    i   < arg_cnt;    i++) { find_and_replace(body, "(P," + to_string(i) + ")", PNT[i]); }
+    for (int i = def_lut_base - 1; MDT[i] != "MEND"; i++) { body += "\n + " + MDT[i]; }
+    for (int i = 0;                    i  < arg_cnt; i++) { find_and_replace(body, "(P," + to_string(i + 1) + ")", PNT[i]); }
 
-    return op + body;
+    return op + body + "\n";
 }
 
 // ------------------------------------------------------------------------------
