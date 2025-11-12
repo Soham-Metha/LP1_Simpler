@@ -9,7 +9,7 @@ string op[COUNT];
 int tab_sizes[COUNT];
 
 #define tab_push(idx, str)                                    \
-    op[idx] += "\n" + to_string(tab_sizes[idx]) + "\t" + str; \
+    op[idx] += "\n" + /*to_string(tab_sizes[idx]) +  "\t" + */str; \
     tab_sizes[idx] += 1
 // ------------------------------------------------------------------------------
 
@@ -48,7 +48,7 @@ void process_macro()
     while (getline(cin, buf) && trim(buf)) {
         tab_push(MDT, buf);
         if (buf.substr(0, 4) == "MEND") { 
-            op[PNTAB] += "\n --- " + name;
+            // op[PNTAB] += "\n --- " + name;
             tab_sizes[PNTAB] = 1; 
             break; 
         }
@@ -77,13 +77,13 @@ int main()
 
     for (size_t i = 0; i < COUNT; i++) { tab_sizes[i] = 1; }
 
-    op[MNT]     += "\n MNT";
-    op[MNT]     += "\n\tNAME\t#PP\t#KP\t#MDTP\t#KPDTAB";
-    op[KPDTAB]  += "\n KPDTAB";
-    op[KPDTAB]  += "\n\tNAME\tVALUE";
-    op[MDT]     += "\n MDT";
-    op[PNTAB]   += "\n PNTAB";
-    op[PROGRAM] += "\n PROGRAM";
+    // op[MNT]     += "\n MNT";
+    // op[MNT]     += "\n\tNAME\t#PP\t#KP\t#MDTP\t#KPDTAB";
+    // op[KPDTAB]  += "\n KPDTAB";
+    // op[KPDTAB]  += "\n\tNAME\tVALUE";
+    // op[MDT]     += "\n MDT";
+    // op[PNTAB]   += "\n PNTAB";
+    // op[PROGRAM] += "\n PROGRAM";
 
     while (getline(cin, line) && trim(line)) {
         if (line.substr(0, 5) == "MACRO") { process_macro(); }
@@ -93,5 +93,5 @@ int main()
     for (size_t i = 0; i < COUNT; i++) { cout << op[i] << "\n\n"; }
 }
 
-// g++ ./assembler_pass_2.cpp
+// g++ ./macro_pass_1.cpp
 // ./a.out < test_case_file
