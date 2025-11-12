@@ -1,0 +1,30 @@
+M1	2	2	1	1
+M2	2	2	6	3
+
+A	AREG
+B	----
+U	CREG
+V	DREG
+
+MOVER (P,3), (P,1)
+ADD (P,3), ='1'
+MOVER (P,4), (P,2)
+ADD (P,3), ='5'
+MEND
+MOVER (P,3), (P,1)
+MOVER (P,4), (P,2)
+ADD (P,3), ='15'
+ADD (P,4), ='10'
+MEND
+
+X
+Y
+A
+B
+P
+Q
+U
+V
+
+M1 10, 20, &B=CREG
+M2 100, 200, &V=AREG, &U=BREG
