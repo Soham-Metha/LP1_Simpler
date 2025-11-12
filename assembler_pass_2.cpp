@@ -52,7 +52,7 @@ int main()
         while (i < COUNT && iss >> buf)
             words[i++] = buf;
 
-        if (idx == SYM_TAB)      { sym_table.push_back({ words[SYM], words[VAL] }); }
+        if      (idx == SYM_TAB) { sym_table.push_back({ words[SYM], words[VAL] }); }
         else if (idx == LIT_TAB) { lit_table.push_back({ words[SYM], words[VAL] }); }
         else if (idx == PROGRAM) {
 
