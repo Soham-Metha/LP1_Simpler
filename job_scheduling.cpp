@@ -107,7 +107,7 @@ round_start:
 
     if (completed_cnt < jobqueue.size()) goto round_start;
 
-    return op;
+    return op + "  " + to_string(timestamp);
 }
 
 // -------------------------------------------------
